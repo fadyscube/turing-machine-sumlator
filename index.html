@@ -1,0 +1,1607 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Turing Machine Simulator By Fady Kheloui</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        /* ==================== VARIABLES ==================== */
+        :root {
+            /* One Dark / VS Code palette */
+            --bg-primary: #1e1e1e;
+            --bg-secondary: #252526;
+            --bg-tertiary: #2d2d30;
+            --border-color: #3e3e42;
+            --text-primary: #d4d4d4;
+            --text-secondary: #858585;
+            --text-dim: #6a6a6a;
+
+            /* Accent colors */
+            --accent-blue: #007acc;
+            --accent-cyan: #4ec9b0;
+            --accent-yellow: #dcdcaa;
+            --accent-green: #4ec9b0;
+            --accent-red: #f48771;
+            --accent-violet: #c586c0;
+            --accent-blue-light: #569cd6;
+            --accent-cyan-light: #4fc1ff;
+
+            --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+        }
+
+        /* ==================== RESET ==================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-mono);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.5;
+            font-size: 13px;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ==================== LAYOUT GRID 2 COLONNES ==================== */
+        .app-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            height: 100vh;
+        }
+
+        .editor-column {
+            background: var(--bg-primary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .results-column {
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        /* ==================== HEADER MINIMAL ==================== */
+        .app-header {
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .app-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        /* ==================== SECTIONS ==================== */
+        .section {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .section-title {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            font-weight: 500;
+        }
+
+        /* ==================== EDITOR ==================== */
+        .editor-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .examples-bar {
+            padding: 8px 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .examples-bar select {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 2px;
+            padding: 4px 8px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .examples-bar select:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .editor-wrapper {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .editor-container-inner {
+            flex: 1;
+            position: relative;
+            overflow: auto;
+            background: var(--bg-primary);
+        }
+
+        .syntax-highlight {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding: 12px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            color: var(--text-primary);
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .line-numbers {
+            background: var(--bg-primary);
+            padding: 12px 8px;
+            text-align: right;
+            font-size: 12px;
+            color: var(--text-dim);
+            user-select: none;
+            min-width: 45px;
+            border-right: 1px solid var(--border-color);
+            overflow-y: hidden;
+            white-space: pre;
+            line-height: 1.5;
+        }
+
+        #programEditor {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            border: none;
+            color: transparent;
+            -webkit-text-fill-color: transparent;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            padding: 12px;
+            outline: none;
+            resize: none;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            caret-color: var(--text-primary);
+            z-index: 1;
+        }
+
+        #programEditor::placeholder {
+            color: var(--text-dim);
+            opacity: 0.5;
+        }
+
+        #programEditor::selection,
+        #programEditor::-moz-selection {
+            background: rgba(0, 122, 204, 0.5);
+            color: var(--text-primary);
+            -webkit-text-fill-color: var(--text-primary);
+        }
+
+        /* ==================== CONTROLS ==================== */
+        .controls-bar {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .controls-bar label {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .controls-bar input[type="text"],
+        .controls-bar input[type="number"] {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 2px;
+            padding: 4px 8px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            outline: none;
+            width: 100px;
+        }
+
+        .controls-bar input:focus {
+            border-color: var(--accent-blue);
+        }
+
+        /* ==================== BUTTONS VS CODE STYLE ==================== */
+        button {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid transparent;
+            border-radius: 2px;
+            padding: 4px 14px;
+            height: 28px;
+            cursor: pointer;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 500;
+            transition: all 150ms ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        button:hover {
+            background: var(--bg-tertiary);
+        }
+
+        button:active {
+            background: var(--bg-secondary);
+        }
+
+        button.primary {
+            background: var(--accent-blue);
+            color: white;
+        }
+
+        button.primary:hover {
+            background: #0098ff;
+        }
+
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* ==================== TAPE DISPLAY ==================== */
+        .tape-display {
+            display: flex;
+            gap: 1px;
+            margin: 12px 0;
+            flex-wrap: wrap;
+        }
+
+        .tape-cell {
+            width: 30px;
+            height: 30px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .tape-cell.blank {
+            color: var(--text-dim);
+            background: var(--bg-secondary);
+        }
+
+        .tape-cell.one {
+            color: var(--accent-cyan);
+            background: rgba(78, 201, 176, 0.1);
+        }
+
+        .tape-cell.separator {
+            color: var(--accent-violet);
+            background: rgba(197, 134, 192, 0.1);
+        }
+
+        .tape-cell.head {
+            background: var(--accent-yellow);
+            color: var(--bg-primary);
+            border-color: var(--accent-yellow);
+            font-weight: 600;
+        }
+
+        .tape-cell.result {
+            background: rgba(78, 201, 176, 0.2);
+            border-color: var(--accent-green);
+        }
+
+        /* ==================== TABLES ==================== */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+
+        th {
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            padding: 8px;
+            text-align: left;
+            font-weight: 500;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        td {
+            padding: 6px 8px;
+            border-bottom: 1px solid rgba(62, 62, 66, 0.3);
+        }
+
+        tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        /* ==================== STATUS ==================== */
+        .status {
+            padding: 12px;
+            border-left: 2px solid;
+            margin: 12px 0;
+            font-size: 12px;
+        }
+
+        .status.success {
+            background: rgba(78, 201, 176, 0.1);
+            border-color: var(--accent-green);
+        }
+
+        .status.error {
+            background: rgba(244, 135, 113, 0.1);
+            border-color: var(--accent-red);
+        }
+
+        .status.warning {
+            background: rgba(220, 220, 170, 0.1);
+            border-color: var(--accent-yellow);
+        }
+
+        /* ==================== RESULT BOX ==================== */
+        .result-box {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .result-value {
+            font-size: 48px;
+            font-weight: 600;
+            color: var(--accent-cyan);
+            margin: 16px 0;
+        }
+
+        .result-info {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin: 8px 0;
+        }
+
+        .visual-bar {
+            height: 4px;
+            background: var(--accent-cyan);
+            margin: 16px auto;
+            max-width: 400px;
+        }
+
+        /* ==================== SYNTAX HIGHLIGHTING ==================== */
+        .syn-state { color: var(--accent-blue-light); }
+        .syn-symbol-1 { color: var(--accent-cyan); }
+        .syn-symbol-0 { color: var(--text-dim); }
+        .syn-symbol-sep { color: var(--accent-violet); }
+        .syn-action-move { color: var(--accent-yellow); }
+        .syn-action-write { color: var(--accent-cyan-light); }
+
+        .tape-compact .one { color: var(--accent-cyan); }
+        .tape-compact .sep { color: var(--accent-violet); }
+        .tape-compact .blank { color: var(--text-dim); }
+        .tape-compact .head {
+            background: var(--accent-yellow);
+            color: var(--bg-primary);
+            padding: 1px 3px;
+            font-weight: 600;
+        }
+
+        /* ==================== STEP INFO ==================== */
+        .step-info-text {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .step-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin: 12px 0;
+        }
+
+        .step-counter {
+            font-size: 11px;
+            color: var(--text-secondary);
+            padding: 0 12px;
+        }
+
+        /* ==================== CONFLICTS ==================== */
+        #conflictsDisplay .status {
+            font-size: 11px;
+        }
+
+        /* ==================== HIDDEN ==================== */
+        .hidden {
+            display: none !important;
+        }
+
+        /* ==================== SCROLLBAR ==================== */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-dim);
+        }
+
+        /* ==================== RESPONSIVE ==================== */
+        @media (max-width: 1024px) {
+            .app-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+            }
+
+            .editor-column {
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+                max-height: 50vh;
+            }
+
+            .results-column {
+                max-height: 50vh;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .controls-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .controls-bar input {
+                width: 100%;
+            }
+
+            button {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- COLONNE GAUCHE: ÉDITEUR -->
+        <div class="editor-column">
+            <!-- Header -->
+            <div class="app-header">
+                <div class="app-title">Turing Machine Simulator - By Fady Kheloui</div>
+            </div>
+
+            <!-- Examples dropdown -->
+            <div class="examples-bar">
+                <select id="examplesSelect">
+                    <option value="">Charger un exemple...</option>
+                    <option value="successor">Successeur (x → x+1)</option>
+                    <option value="addition">Addition (x + y)</option>
+                    <option value="multiplication">Multiplication (x × y)</option>
+                    <option value="erase">Effacement</option>
+                </select>
+            </div>
+
+            <!-- Editor -->
+            <div class="editor-container">
+                <div class="editor-wrapper">
+                    <div class="line-numbers" id="lineNumbers">1</div>
+                    <div class="editor-container-inner">
+                        <div class="syntax-highlight" id="syntaxHighlight"></div>
+                        <textarea id="programEditor" placeholder="# Format: état symbole action état_suivant
+# Symboles: 0 (blanc), 1 (barre), * (séparateur)
+# Actions: D (droite), G (gauche), ou symbole à écrire
+#
+# Exemple:
+q0 1 D q0
+q0 0 1 qf" spellcheck="false"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conflicts display -->
+            <div id="conflictsDisplay"></div>
+
+            <!-- Controls -->
+            <div class="controls-bar">
+                <label>Entrées:</label>
+                <input type="text" id="inputValues" placeholder="4 3" value="4 3">
+
+                <label>Max:</label>
+                <input type="number" id="maxSteps" value="10000" min="100" max="1000000" style="width: 70px;">
+
+                <button id="runBtn" class="primary">Exécuter</button>
+                <button id="stepBtn">Pas à pas</button>
+                <button id="resetBtn">Réinitialiser</button>
+            </div>
+
+            <!-- Error display -->
+            <div id="errorDisplay"></div>
+        </div>
+
+        <!-- COLONNE DROITE: RÉSULTATS -->
+        <div class="results-column">
+            <!-- Initial Tape -->
+            <section class="section hidden" id="initialTapeSection">
+                <div class="section-title">Ruban initial</div>
+                <div id="initialTape" class="tape-display"></div>
+            </section>
+
+            <!-- Step Controls -->
+            <section class="section hidden" id="stepControlsSection">
+                <div class="section-title">Contrôles</div>
+                <div class="step-controls">
+                    <button id="prevStepBtn">Précédent</button>
+                    <span class="step-counter" id="stepInfo">Étape 0 / 0</span>
+                    <button id="nextStepBtn">Suivant</button>
+                    <button id="playAllBtn">Tout exécuter</button>
+                </div>
+            </section>
+
+            <!-- Current Tape (Step Mode) -->
+            <section class="section hidden" id="currentTapeSection">
+                <div class="section-title">Ruban actuel</div>
+                <div id="currentStepInfo" class="step-info-text"></div>
+                <div id="currentTape" class="tape-display"></div>
+            </section>
+
+            <!-- History Table -->
+            <section class="section hidden" id="historySection">
+                <div class="section-title">Déroulement</div>
+                <div class="table-container">
+                    <table id="historyTable">
+                        <thead>
+                            <tr>
+                                <th>Étape</th>
+                                <th>État</th>
+                                <th>Symbole</th>
+                                <th>Action</th>
+                                <th>État suivant</th>
+                                <th>Ruban</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Final Tape & Result -->
+            <section class="section hidden" id="resultSection">
+                <div class="section-title">Résultat final</div>
+
+                <div id="statusDisplay"></div>
+
+                <div id="finalTape" class="tape-display"></div>
+
+                <div id="resultDisplay"></div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        // ==================== CLASSES ====================
+
+        /**
+         * Tape: Ruban infini avec defaultdict comportement
+         */
+        class Tape {
+            constructor() {
+                this.data = {}; // Sparse array
+                this.blank = '0';
+            }
+
+            read(pos) {
+                return this.data[pos] || this.blank;
+            }
+
+            write(pos, symbol) {
+                this.data[pos] = symbol;
+            }
+
+            load(symbols, offset = 0) {
+                symbols.forEach((s, i) => {
+                    this.write(i + offset, s);
+                });
+            }
+
+            bounds(padding = 3) {
+                const positions = Object.keys(this.data).map(Number).filter(pos => this.data[pos] !== this.blank);
+                if (positions.length === 0) return [-padding, padding];
+
+                let lo = Math.min(...positions);
+                let hi = Math.max(...positions);
+
+                // Trim trailing blanks
+                while (hi > lo && this.read(hi) === this.blank) hi--;
+                while (lo < hi && this.read(lo) === this.blank) lo++;
+
+                return [lo - padding, hi + padding];
+            }
+
+            toString(lo, hi) {
+                const result = [];
+                for (let i = lo; i <= hi; i++) {
+                    result.push(this.read(i));
+                }
+                return result.join('');
+            }
+
+            copy() {
+                const t = new Tape();
+                t.data = { ...this.data };
+                return t;
+            }
+        }
+
+        /**
+         * TuringMachine: Parser et simulateur
+         */
+        class TuringMachine {
+            constructor() {
+                this.transitions = {};
+                this.errors = [];
+            }
+
+            /**
+             * Parse le programme texte
+             */
+            loadProgram(text) {
+                this.transitions = {};
+                this.errors = [];
+                const instructions = [];
+
+                const lines = text.split('\n');
+
+                for (let lineno = 1; lineno <= lines.length; lineno++) {
+                    const line = lines[lineno - 1].trim();
+
+                    // Skip blanks and comments
+                    if (!line || line.startsWith('#') || line.startsWith('//')) continue;
+
+                    const parts = line.split(/\s+/);
+
+                    if (parts.length !== 4) {
+                        this.errors.push(`Ligne ${lineno}: attendu 4 tokens, reçu ${parts.length} → '${line}'`);
+                        continue;
+                    }
+
+                    const [state, symbol, action, nextState] = parts;
+
+                    // Validation symbole
+                    if (!['0', '1', '*'].includes(symbol)) {
+                        this.errors.push(`Ligne ${lineno}: symbole invalide '${symbol}' (doit être 0, 1 ou *)`);
+                        continue;
+                    }
+
+                    // Validation action
+                    if (!['D', 'G', '0', '1', '*'].includes(action)) {
+                        this.errors.push(`Ligne ${lineno}: action invalide '${action}' (doit être D, G, 0, 1 ou *)`);
+                        continue;
+                    }
+
+                    const key = `${state},${symbol}`;
+                    if (this.transitions[key]) {
+                        this.errors.push(`Ligne ${lineno}: CONFLIT — (${state}, '${symbol}') déjà défini → non-déterminisme interdit!`);
+                        continue;
+                    }
+
+                    this.transitions[key] = { action, nextState };
+                    instructions.push({ lineno, state, symbol, action, nextState });
+                }
+
+                return instructions;
+            }
+
+            /**
+             * Encode les valeurs en unaire
+             */
+            static encode(values) {
+                const parts = values.map(v => '1'.repeat(v + 1));
+                const tapeStr = parts.join('*');
+                const symbols = tapeStr.split('');
+
+                // Head sur le premier '1'
+                let head = 0;
+                while (head < symbols.length && symbols[head] !== '1') {
+                    head++;
+                }
+                if (head >= symbols.length) head = 0;
+
+                return { symbols, head };
+            }
+
+            /**
+             * Exécute la machine
+             */
+            run(values, options = {}) {
+                const {
+                    initialState = 'q0',
+                    finalState = 'qf',
+                    maxSteps = 10000,
+                    verbose = false
+                } = options;
+
+                const { symbols, head: initialHead } = TuringMachine.encode(values);
+                const tape = new Tape();
+                tape.load(symbols, 0);
+
+                let state = initialState;
+                let head = initialHead;
+                let steps = 0;
+                const history = [];
+
+                const snap = () => ({
+                    step: steps,
+                    state,
+                    head,
+                    tape: tape.copy()
+                });
+
+                if (verbose) history.push(snap());
+
+                let halted = false;
+                let haltReason = '';
+
+                while (steps < maxSteps) {
+                    const symbol = tape.read(head);
+                    const key = `${state},${symbol}`;
+
+                    if (!this.transitions[key]) {
+                        halted = true;
+                        haltReason = `Pas d'instruction pour (${state}, '${symbol}') — machine arrêtée.`;
+                        break;
+                    }
+
+                    const { action, nextState } = this.transitions[key];
+
+                    // Apply action
+                    if (action === 'D') {
+                        head++;
+                    } else if (action === 'G') {
+                        head--;
+                    } else {
+                        tape.write(head, action);
+                    }
+
+                    state = nextState;
+                    steps++;
+
+                    if (verbose) history.push(snap());
+
+                    // Check final state
+                    if (state === finalState) {
+                        const nextSymbol = tape.read(head);
+                        const nextKey = `${finalState},${nextSymbol}`;
+                        if (!this.transitions[nextKey]) {
+                            halted = true;
+                            haltReason = `État final '${finalState}' atteint.`;
+                            break;
+                        }
+                    }
+                }
+
+                if (steps >= maxSteps) {
+                    haltReason = `Limite d'étapes atteinte (${maxSteps}) — boucle infinie détectée.`;
+                }
+
+                return {
+                    tape,
+                    head,
+                    state,
+                    steps,
+                    halted,
+                    haltReason,
+                    history,
+                    inputs: values
+                };
+            }
+
+            /**
+             * Décode le résultat du ruban
+             */
+            static readResult(tape, head) {
+                let pos = head;
+
+                // Si pas sur '1', chercher le bloc le plus proche
+                if (tape.read(pos) !== '1') {
+                    let found = false;
+
+                    // Chercher à gauche
+                    for (let p = pos - 1; p >= head - 200; p--) {
+                        if (tape.read(p) === '1') {
+                            pos = p;
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    // Chercher à droite si pas trouvé
+                    if (!found) {
+                        for (let p = pos + 1; p <= head + 200; p++) {
+                            if (tape.read(p) === '1') {
+                                pos = p;
+                                found = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!found) return { value: null, start: null, end: null };
+                }
+
+                // Trouver le début du bloc
+                while (tape.read(pos - 1) === '1') {
+                    pos--;
+                }
+                const blockStart = pos;
+
+                // Compter les '1'
+                let count = 0;
+                while (tape.read(pos) === '1') {
+                    count++;
+                    pos++;
+                }
+                const blockEnd = pos - 1;
+
+                return {
+                    value: count - 1,
+                    start: blockStart,
+                    end: blockEnd
+                };
+            }
+
+            /**
+             * Trouve tous les blocs de 1 sur le ruban
+             */
+            static allResultBlocks(tape) {
+                const [lo, hi] = tape.bounds(0);
+                const blocks = [];
+                let i = lo;
+
+                while (i <= hi) {
+                    if (tape.read(i) === '1') {
+                        const start = i;
+                        let count = 0;
+                        while (tape.read(i) === '1') {
+                            count++;
+                            i++;
+                        }
+                        blocks.push({ value: count - 1, start, end: i - 1 });
+                    } else {
+                        i++;
+                    }
+                }
+
+                return blocks;
+            }
+        }
+
+        // ==================== UI CONTROLLER ====================
+
+        class TuringSimulator {
+            constructor() {
+                this.tm = new TuringMachine();
+                this.result = null;
+                this.currentStep = 0;
+                this.stepMode = false;
+
+                this.initElements();
+                this.initExamples();
+                this.bindEvents();
+                this.loadFromLocalStorage();
+
+                // Initialize line numbers, syntax highlighting and conflict checking
+                this.updateLineNumbers();
+                this.updateSyntaxHighlight();
+                this.checkConflicts();
+            }
+
+            initElements() {
+                // Editor
+                this.programEditor = document.getElementById('programEditor');
+                this.syntaxHighlight = document.getElementById('syntaxHighlight');
+                this.lineNumbers = document.getElementById('lineNumbers');
+                this.conflictsDisplay = document.getElementById('conflictsDisplay');
+                this.examplesSelect = document.getElementById('examplesSelect');
+
+                // Inputs
+                this.inputValues = document.getElementById('inputValues');
+                this.maxSteps = document.getElementById('maxSteps');
+
+                // Buttons
+                this.runBtn = document.getElementById('runBtn');
+                this.stepBtn = document.getElementById('stepBtn');
+                this.resetBtn = document.getElementById('resetBtn');
+                this.prevStepBtn = document.getElementById('prevStepBtn');
+                this.nextStepBtn = document.getElementById('nextStepBtn');
+                this.playAllBtn = document.getElementById('playAllBtn');
+
+                // Sections
+                this.errorDisplay = document.getElementById('errorDisplay');
+                this.initialTapeSection = document.getElementById('initialTapeSection');
+                this.initialTape = document.getElementById('initialTape');
+                this.stepControlsSection = document.getElementById('stepControlsSection');
+                this.stepInfo = document.getElementById('stepInfo');
+                this.currentTapeSection = document.getElementById('currentTapeSection');
+                this.currentStepInfo = document.getElementById('currentStepInfo');
+                this.currentTape = document.getElementById('currentTape');
+                this.historySection = document.getElementById('historySection');
+                this.historyTable = document.getElementById('historyTable');
+                this.resultSection = document.getElementById('resultSection');
+                this.statusDisplay = document.getElementById('statusDisplay');
+                this.finalTape = document.getElementById('finalTape');
+                this.resultDisplay = document.getElementById('resultDisplay');
+            }
+
+            initExamples() {
+                this.examples = {
+                    successor: `# Successeur: x → x+1
+# Stratégie: aller à droite jusqu'au blanc, écrire 1
+q0 1 D q0
+q0 * D q0
+q0 0 1 qf`,
+
+                    addition: `# Addition: x + y → x+y
+# Stratégie: transformer * en 1
+q0 1 D q0
+q0 * 1 q1
+q1 1 D q1
+q1 0 0 qf`,
+
+                    multiplication: `# Multiplication: x × y
+# Stratégie simplifiée pour démonstration
+q0 1 D q0
+q0 * D q1
+q1 1 D q1
+q1 0 0 qf`,
+
+                    erase: `# Effacement: remplacer tous les 1 par 0
+q0 1 0 q0
+q0 * 0 q0
+q0 0 D q1
+q1 1 0 q0
+q1 * 0 q0
+q1 0 D qf`
+                };
+            }
+
+            bindEvents() {
+                // Editor events
+                this.programEditor.addEventListener('input', () => {
+                    this.updateLineNumbers();
+                    this.updateSyntaxHighlight();
+                    this.checkConflicts();
+                    this.saveToLocalStorage();
+                });
+
+                this.programEditor.addEventListener('scroll', () => {
+                    this.lineNumbers.scrollTop = this.programEditor.scrollTop;
+                    this.syntaxHighlight.scrollTop = this.programEditor.scrollTop;
+                    this.syntaxHighlight.scrollLeft = this.programEditor.scrollLeft;
+                });
+
+                this.programEditor.addEventListener('keydown', (e) => {
+                    if (e.ctrlKey && e.key === 'Enter') {
+                        e.preventDefault();
+                        this.run();
+                    }
+                    // Tab handling
+                    if (e.key === 'Tab') {
+                        e.preventDefault();
+                        const start = this.programEditor.selectionStart;
+                        const end = this.programEditor.selectionEnd;
+                        this.programEditor.value = this.programEditor.value.substring(0, start) + '    ' + this.programEditor.value.substring(end);
+                        this.programEditor.selectionStart = this.programEditor.selectionEnd = start + 4;
+                        this.updateLineNumbers();
+                        this.updateSyntaxHighlight();
+                        this.checkConflicts();
+                    }
+                });
+
+                this.examplesSelect.addEventListener('change', (e) => {
+                    const example = e.target.value;
+                    if (example && this.examples[example]) {
+                        this.programEditor.value = this.examples[example];
+                        this.updateLineNumbers();
+                        this.updateSyntaxHighlight();
+                        this.checkConflicts();
+                        this.saveToLocalStorage();
+                    }
+                });
+
+                // Button events
+                this.runBtn.addEventListener('click', () => this.run());
+                this.stepBtn.addEventListener('click', () => this.startStepMode());
+                this.resetBtn.addEventListener('click', () => this.reset());
+
+                this.prevStepBtn.addEventListener('click', () => this.prevStep());
+                this.nextStepBtn.addEventListener('click', () => this.nextStep());
+                this.playAllBtn.addEventListener('click', () => this.playAll());
+
+                // Input events
+                this.inputValues.addEventListener('change', () => this.saveToLocalStorage());
+            }
+
+            updateLineNumbers() {
+                const lines = this.programEditor.value.split('\n');
+                this.lineNumbers.innerHTML = lines.map((_, i) => i + 1).join('\n');
+            }
+
+            updateSyntaxHighlight() {
+                const code = this.programEditor.value;
+                const highlighted = this.highlightSyntax(code);
+                this.syntaxHighlight.innerHTML = highlighted;
+            }
+
+            highlightSyntax(code) {
+                const lines = code.split('\n');
+                return lines.map(line => {
+                    const trimmed = line.trim();
+
+                    // Comments
+                    if (trimmed.startsWith('#') || trimmed.startsWith('//')) {
+                        return `<span style="color: var(--text-dim);">${this.escapeHtml(line)}</span>`;
+                    }
+
+                    // Empty lines
+                    if (!trimmed) {
+                        return this.escapeHtml(line);
+                    }
+
+                    // Try to match instruction pattern: state symbol action nextState
+                    const regex = /(\S+)\s+(\S+)\s+(\S+)\s+(\S+)/;
+                    const match = line.match(regex);
+
+                    if (match) {
+                        const [fullMatch, state, symbol, action, nextState] = match;
+                        const startIndex = match.index;
+
+                        // Split line into parts preserving whitespace
+                        const before = line.substring(0, startIndex);
+                        const after = line.substring(startIndex + fullMatch.length);
+
+                        // Get the spacing between tokens from the original match
+                        const tokenRegex = /(\S+)(\s+)/g;
+                        let colored = '';
+                        let lastIndex = 0;
+                        let tokenCount = 0;
+                        const tokens = [state, symbol, action, nextState];
+                        const colors = [
+                            'var(--accent-blue-light)',  // state
+                            symbol === '1' ? 'var(--accent-cyan)' : symbol === '*' ? 'var(--accent-violet)' : 'var(--text-dim)',  // symbol
+                            (action === 'D' || action === 'G') ? 'var(--accent-yellow)' : 'var(--accent-cyan-light)',  // action
+                            'var(--accent-blue-light)'   // nextState
+                        ];
+
+                        tokenRegex.lastIndex = 0;
+                        let tokenMatch;
+                        while ((tokenMatch = tokenRegex.exec(fullMatch)) !== null && tokenCount < 4) {
+                            const token = tokenMatch[1];
+                            const spacing = tokenMatch[2] || '';
+                            colored += `<span style="color: ${colors[tokenCount]};">${this.escapeHtml(token)}</span>${this.escapeHtml(spacing)}`;
+                            tokenCount++;
+                        }
+
+                        return this.escapeHtml(before) + colored + this.escapeHtml(after);
+                    }
+
+                    // Invalid line (keep as is)
+                    return this.escapeHtml(line);
+                }).join('\n');
+            }
+
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            checkConflicts() {
+                const code = this.programEditor.value;
+                const lines = code.split('\n');
+
+                // Detect conflicts
+                const transitions = {};
+                const conflictLines = [];
+
+                lines.forEach((line, idx) => {
+                    const trimmed = line.trim();
+                    if (!trimmed || trimmed.startsWith('#') || trimmed.startsWith('//')) return;
+
+                    const parts = trimmed.split(/\s+/);
+                    if (parts.length === 4) {
+                        const [state, symbol, action, nextState] = parts;
+                        const key = `${state},${symbol}`;
+
+                        if (transitions[key]) {
+                            conflictLines.push({
+                                line1: transitions[key].lineNum + 1,
+                                line2: idx + 1,
+                                state,
+                                symbol
+                            });
+                        } else {
+                            transitions[key] = { lineNum: idx };
+                        }
+                    }
+                });
+
+                // Display conflicts
+                if (conflictLines.length > 0) {
+                    const conflictsHtml = conflictLines.map(c =>
+                        `Lignes ${c.line1} et ${c.line2}: conflit pour (${c.state}, '${c.symbol}')`
+                    ).join('<br>');
+
+                    this.conflictsDisplay.innerHTML = `
+                        <div class="status warning">
+                            <strong>Conflits détectés (non-déterminisme)</strong><br>
+                            ${conflictsHtml}
+                        </div>
+                    `;
+                } else {
+                    this.conflictsDisplay.innerHTML = '';
+                }
+            }
+
+            saveToLocalStorage() {
+                localStorage.setItem('turing_program', this.programEditor.value);
+                localStorage.setItem('turing_inputs', this.inputValues.value);
+            }
+
+            loadFromLocalStorage() {
+                const savedProgram = localStorage.getItem('turing_program');
+                const savedInputs = localStorage.getItem('turing_inputs');
+
+                if (savedProgram) {
+                    this.programEditor.value = savedProgram;
+                    this.updateLineNumbers();
+                    this.updateSyntaxHighlight();
+                    this.checkConflicts();
+                }
+
+                if (savedInputs) {
+                    this.inputValues.value = savedInputs;
+                }
+            }
+
+            parseInputs() {
+                const text = this.inputValues.value.trim();
+                if (!text) return [];
+
+                return text.split(/\s+/).map(v => {
+                    const num = parseInt(v, 10);
+                    if (isNaN(num) || num < 0) {
+                        throw new Error(`Valeur invalide: '${v}' (doit être un entier positif)`);
+                    }
+                    return num;
+                });
+            }
+
+            showError(message, errors = []) {
+                this.errorDisplay.innerHTML = `
+                    <div class="status error">
+                        <strong>Erreur</strong><br>
+                        ${message}
+                        ${errors.length > 0 ? `
+                            <ul class="errors-list">
+                                ${errors.map(e => `<li>${e}</li>`).join('')}
+                            </ul>
+                        ` : ''}
+                    </div>
+                `;
+            }
+
+            clearError() {
+                this.errorDisplay.innerHTML = '';
+            }
+
+            run() {
+                this.clearError();
+                this.stepMode = false;
+                this.currentStep = 0;
+
+                // Parse program
+                const programText = this.programEditor.value;
+                const instructions = this.tm.loadProgram(programText);
+
+                if (this.tm.errors.length > 0) {
+                    this.showError('Erreurs de parsing détectées:', this.tm.errors);
+                    return;
+                }
+
+                if (instructions.length === 0) {
+                    this.showError('Aucune instruction valide trouvée.');
+                    return;
+                }
+
+                // Parse inputs
+                let values;
+                try {
+                    values = this.parseInputs();
+                } catch (e) {
+                    this.showError(e.message);
+                    return;
+                }
+
+                if (values.length === 0) {
+                    this.showError('Veuillez entrer au moins une valeur d\'entrée.');
+                    return;
+                }
+
+                // Show initial tape
+                this.displayInitialTape(values);
+
+                // Run simulation
+                const maxSteps = parseInt(this.maxSteps.value, 10);
+                this.result = this.tm.run(values, {
+                    initialState: 'q0',
+                    finalState: 'qf',
+                    maxSteps,
+                    verbose: true
+                });
+
+                // Display results
+                this.displayHistory(this.result.history);
+                this.displayResult(this.result);
+
+                // Show sections
+                this.stepControlsSection.classList.add('hidden');
+                this.currentTapeSection.classList.add('hidden');
+                this.historySection.classList.remove('hidden');
+                this.resultSection.classList.remove('hidden');
+            }
+
+            startStepMode() {
+                this.clearError();
+                this.stepMode = true;
+                this.currentStep = 0;
+
+                // Parse program
+                const programText = this.programEditor.value;
+                const instructions = this.tm.loadProgram(programText);
+
+                if (this.tm.errors.length > 0) {
+                    this.showError('Erreurs de parsing détectées:', this.tm.errors);
+                    return;
+                }
+
+                if (instructions.length === 0) {
+                    this.showError('Aucune instruction valide trouvée.');
+                    return;
+                }
+
+                // Parse inputs
+                let values;
+                try {
+                    values = this.parseInputs();
+                } catch (e) {
+                    this.showError(e.message);
+                    return;
+                }
+
+                if (values.length === 0) {
+                    this.showError('Veuillez entrer au moins une valeur d\'entrée.');
+                    return;
+                }
+
+                // Show initial tape
+                this.displayInitialTape(values);
+
+                // Run simulation
+                const maxSteps = parseInt(this.maxSteps.value, 10);
+                this.result = this.tm.run(values, {
+                    initialState: 'q0',
+                    finalState: 'qf',
+                    maxSteps,
+                    verbose: true
+                });
+
+                // Show step controls and current tape
+                this.stepControlsSection.classList.remove('hidden');
+                this.currentTapeSection.classList.remove('hidden');
+                this.historySection.classList.remove('hidden');
+                this.resultSection.classList.add('hidden');
+
+                this.updateStepDisplay();
+            }
+
+            prevStep() {
+                if (this.currentStep > 0) {
+                    this.currentStep--;
+                    this.updateStepDisplay();
+                }
+            }
+
+            nextStep() {
+                if (this.currentStep < this.result.history.length - 1) {
+                    this.currentStep++;
+                    this.updateStepDisplay();
+                }
+            }
+
+            playAll() {
+                this.currentStep = this.result.history.length - 1;
+                this.updateStepDisplay();
+                this.displayResult(this.result);
+                this.resultSection.classList.remove('hidden');
+            }
+
+            updateStepDisplay() {
+                this.stepInfo.textContent = `Étape ${this.currentStep} / ${this.result.history.length - 1}`;
+
+                this.prevStepBtn.disabled = this.currentStep === 0;
+                this.nextStepBtn.disabled = this.currentStep === this.result.history.length - 1;
+
+                // Get current snapshot
+                const currentSnap = this.result.history[this.currentStep];
+                const { state, head, tape } = currentSnap;
+
+                // Display current tape visually
+                const [lo, hi] = tape.bounds(5);
+                const symbols = [];
+                for (let i = lo; i <= hi; i++) {
+                    symbols.push(tape.read(i));
+                }
+
+                // Show current step info
+                const symbol = tape.read(head);
+                this.currentStepInfo.innerHTML = `
+                    <strong>État:</strong> <span style="color: var(--accent-blue-light);">${state}</span> |
+                    <strong>Position:</strong> ${head} |
+                    <strong>Symbole lu:</strong> <span style="color: var(--accent-cyan);">${symbol}</span>
+                `;
+
+                // Render the beautiful tape
+                this.renderTape(this.currentTape, symbols, head - lo, null);
+
+                // Display history up to current step
+                this.displayHistory(this.result.history.slice(0, this.currentStep + 1));
+            }
+
+            reset() {
+                this.clearError();
+                this.result = null;
+                this.currentStep = 0;
+                this.stepMode = false;
+
+                this.initialTapeSection.classList.add('hidden');
+                this.stepControlsSection.classList.add('hidden');
+                this.currentTapeSection.classList.add('hidden');
+                this.historySection.classList.add('hidden');
+                this.resultSection.classList.add('hidden');
+            }
+
+            displayInitialTape(values) {
+                const { symbols, head } = TuringMachine.encode(values);
+
+                // Tape display
+                this.renderTape(this.initialTape, symbols, head, null);
+                this.initialTapeSection.classList.remove('hidden');
+            }
+
+            displayHistory(history) {
+                const tbody = this.historyTable.querySelector('tbody');
+                tbody.innerHTML = '';
+
+                for (let i = 0; i < history.length; i++) {
+                    const snap = history[i];
+                    const { step, state, head, tape } = snap;
+                    const symbol = tape.read(head);
+
+                    const key = `${state},${symbol}`;
+                    let actionStr = '';
+                    let nextState = '';
+
+                    if (i < history.length - 1) {
+                        const nextSnap = history[i + 1];
+                        nextState = nextSnap.state;
+
+                        if (this.tm.transitions[key]) {
+                            const { action } = this.tm.transitions[key];
+                            if (action === 'D') {
+                                actionStr = '<span class="syn-action-move">D</span>';
+                            } else if (action === 'G') {
+                                actionStr = '<span class="syn-action-move">G</span>';
+                            } else {
+                                actionStr = `<span class="syn-action-write">'${action}'</span>`;
+                            }
+                        } else {
+                            actionStr = '<span style="color: var(--accent-red);">HALT</span>';
+                            nextState = '---';
+                        }
+                    } else {
+                        actionStr = '<span style="color: var(--accent-red);">HALT</span>';
+                        nextState = '---';
+                    }
+
+                    const tapeCompact = this.renderTapeCompact(tape, head, null);
+
+                    const row = tbody.insertRow();
+                    row.innerHTML = `
+                        <td>${step}</td>
+                        <td><span class="syn-state">${state}</span></td>
+                        <td><span class="syn-symbol-${symbol === '1' ? '1' : symbol === '0' ? '0' : 'sep'}">${symbol}</span></td>
+                        <td>${actionStr}</td>
+                        <td>${nextState !== '---' ? `<span class="syn-state">${nextState}</span>` : nextState}</td>
+                        <td class="tape-compact">${tapeCompact}</td>
+                    `;
+                }
+
+                // Auto-scroll to bottom
+                setTimeout(() => {
+                    const tableContainer = this.historyTable.closest('.table-container');
+                    if (tableContainer) {
+                        tableContainer.scrollTop = tableContainer.scrollHeight;
+                    }
+                }, 100);
+            }
+
+            displayResult(result) {
+                const { tape, head, state, steps, halted, haltReason } = result;
+
+                // Status
+                const statusClass = halted ? 'success' : 'warning';
+                this.statusDisplay.innerHTML = `
+                    <div class="status ${statusClass}">
+                        <strong>${haltReason}</strong><br>
+                        Étapes exécutées: <strong>${steps}</strong><br>
+                        État final: <strong>${state}</strong>
+                    </div>
+                `;
+
+                // Decode result
+                const decoded = TuringMachine.readResult(tape, head);
+
+                // Final tape
+                const [lo, hi] = tape.bounds(5);
+                const symbols = [];
+                for (let i = lo; i <= hi; i++) {
+                    symbols.push(tape.read(i));
+                }
+
+                const resultRange = decoded.value !== null ? { start: decoded.start, end: decoded.end } : null;
+                this.renderTape(this.finalTape, symbols, head - lo, resultRange ? { start: resultRange.start - lo, end: resultRange.end - lo } : null);
+
+                // Result display
+                if (decoded.value !== null) {
+                    const inputs = result.inputs;
+
+                    let inputStr = '';
+                    if (inputs.length === 1) {
+                        inputStr = `Entrée: x = ${inputs[0]} → f(${inputs[0]}) = ${decoded.value}`;
+                    } else if (inputs.length === 2) {
+                        inputStr = `Entrées: x=${inputs[0]}, y=${inputs[1]} → f(${inputs[0]},${inputs[1]}) = ${decoded.value}`;
+                    } else {
+                        inputStr = `Entrées: ${inputs.join(', ')} → Résultat = ${decoded.value}`;
+                    }
+
+                    this.resultDisplay.innerHTML = `
+                        <div class="result-box">
+                            <div class="result-value">${decoded.value}</div>
+                            ${decoded.value <= 40 && decoded.value > 0 ? `
+                                <div class="visual-bar" style="width: ${Math.min(decoded.value * 15, 600)}px;"></div>
+                            ` : ''}
+                            <div class="result-info">
+                                ${inputStr}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    this.resultDisplay.innerHTML = `
+                        <div class="status error">
+                            <strong>Impossible de lire le résultat</strong><br>
+                            Aucun bloc de '1' trouvé près du curseur.
+                        </div>
+                    `;
+                }
+
+                this.resultSection.classList.remove('hidden');
+            }
+
+            renderTape(container, symbols, headPos, resultRange) {
+                container.innerHTML = '';
+
+                symbols.forEach((sym, i) => {
+                    const cell = document.createElement('div');
+                    cell.className = 'tape-cell';
+                    cell.textContent = sym;
+
+                    if (i === headPos) {
+                        cell.classList.add('head');
+                    } else if (resultRange && i >= resultRange.start && i <= resultRange.end) {
+                        cell.classList.add('result');
+                    } else if (sym === '1') {
+                        cell.classList.add('one');
+                    } else if (sym === '*') {
+                        cell.classList.add('separator');
+                    } else {
+                        cell.classList.add('blank');
+                    }
+
+                    container.appendChild(cell);
+                });
+            }
+
+            renderTapeCompact(tape, head, resultRange) {
+                const [lo, hi] = tape.bounds(0);
+                const start = Math.min(lo, head) - 1;
+                const end = Math.max(hi, head) + 1;
+
+                let html = '';
+                for (let i = start; i <= end; i++) {
+                    const sym = tape.read(i);
+                    const isHead = i === head;
+                    const inResult = resultRange && i >= resultRange.start && i <= resultRange.end;
+
+                    if (isHead) {
+                        html += `<span class="head">[${sym}]</span>`;
+                    } else if (inResult) {
+                        html += `<span class="result">${sym}</span>`;
+                    } else if (sym === '*') {
+                        html += `<span class="sep">*</span>`;
+                    } else if (sym === '1') {
+                        html += `<span class="one">1</span>`;
+                    } else {
+                        html += `<span class="blank">·</span>`;
+                    }
+                }
+
+                return html;
+            }
+        }
+
+        // ==================== INIT ====================
+
+        const simulator = new TuringSimulator();
+    </script>
+</body>
+</html>
