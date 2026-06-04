@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Turing Machine Simulator By Fady Kheloui</title>
 
     <!-- Google Fonts -->
@@ -283,6 +283,14 @@
             cursor: not-allowed;
         }
 
+        /* Prevent double-tap zoom on mobile */
+        button,
+        input,
+        select,
+        textarea {
+            touch-action: manipulation;
+        }
+
         /* ==================== TAPE DISPLAY ==================== */
         .tape-display {
             display: flex;
@@ -487,15 +495,23 @@
             .editor-column {
                 border-right: none;
                 border-bottom: 1px solid var(--border-color);
-                max-height: 50vh;
+                max-height: 65vh;
             }
 
             .results-column {
-                max-height: 50vh;
+                max-height: 35vh;
             }
         }
 
         @media (max-width: 768px) {
+            .editor-column {
+                max-height: 70vh;
+            }
+
+            .results-column {
+                max-height: 30vh;
+            }
+
             .controls-bar {
                 flex-direction: column;
                 align-items: stretch;
